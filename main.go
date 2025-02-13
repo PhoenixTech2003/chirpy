@@ -8,9 +8,14 @@ import (
 
 func main()  {
 	mux := http.NewServeMux()
-	imageMux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir(".")))
-	imageMux.Handle("/assets", http.FileServer(http.Dir("./assets/logo.png")))
+	mux.Handle("/app/", http.StripPrefix("/app",http.FileServer(http.Dir("."))),)
+	mux.Handle("/app/assets", http.FileServer(http.Dir("./assets/logo.png")) ,)
+	mux.HandleFunc("/healthz", func (response http.ResponseWriter, request *http.Request){
+		response.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		response.WriteHeader(200)
+		response.Write([]byte("OK"))
+		
+	})
 	server := http.Server{
 		Handler: mux,
 		Addr: ":8080",
