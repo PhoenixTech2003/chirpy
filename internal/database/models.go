@@ -10,8 +10,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type Chirp struct {
+	ID     uuid.UUID
+	UserID uuid.NullUUID
+	Body   sql.NullString
+}
+
 type User struct {
-	ID        uuid.NullUUID
+	ID        uuid.UUID
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	Email     sql.NullString
