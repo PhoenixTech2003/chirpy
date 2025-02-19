@@ -1,13 +1,21 @@
 package main
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/phoenixTech2003/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	fileServerHits atomic.Int32
+	dbQueries *database.Queries
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -35,7 +43,16 @@ func (cfg *apiConfig) middlewareResetServerHits(w http.ResponseWriter, req *http
 }
 
 func main() {
-	apiCfg := apiConfig{}
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err!=nil {
+		log.Printf("Failed to open database connection %s", err)
+	}
+	apiCfg := apiConfig{
+		dbQueries: database.New(db),
+	}
+	
 	mux := http.NewServeMux()
 	mux.Handle("/app/", http.StripPrefix("/app", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir(".")))))
 	mux.Handle("/app/assets", http.FileServer(http.Dir("./assets/logo.png")))
@@ -45,6 +62,7 @@ func main() {
 		response.Write([]byte("OK"))
 
 	})
+	mux.HandleFunc("POST /api/users", apiCfg.postUsers)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
 	mux.HandleFunc("POST /api/reset", apiCfg.middlewareResetServerHits)
