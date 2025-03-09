@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -10,8 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/phoenixTech2003/chirpy/internal/auth"
 	"github.com/phoenixTech2003/chirpy/internal/database"
-	
-	
 )
 
 
@@ -78,6 +77,7 @@ func (cfg *apiConfig) loginUser( w http.ResponseWriter, r *http.Request){
 	type parameters struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
+		ExpiresInSeconds float64 `json:"expires_in_seconds"`
 	}
 
 	type responseParameters struct {
@@ -85,6 +85,7 @@ func (cfg *apiConfig) loginUser( w http.ResponseWriter, r *http.Request){
 		CreatedAt time.Time `json:"createdAt"`
 		UpdatedAt time.Time `json:"updatedAt"`
 		Email string `json:"email"`
+		Token string `json:"token"`
 
 	}
 
@@ -109,12 +110,24 @@ func (cfg *apiConfig) loginUser( w http.ResponseWriter, r *http.Request){
 		w.WriteHeader(401)
 		return
 	}
+	fmt.Print(requestParameters.ExpiresInSeconds)
+	if requestParameters.ExpiresInSeconds == 0 {
+		requestParameters.ExpiresInSeconds = 3600
+	}
+
+	token, err := auth.MakeJWT(userData.ID, cfg.tokenSecret, time.Duration(requestParameters.ExpiresInSeconds))
+	if err != nil {
+		log.Printf("An error occured while generating jwt for user %s failed with error: %s",userData.ID.String(), err)
+		w.WriteHeader(500)
+		return
+	}
 
 	respBody := responseParameters{
 		Id: userData.ID.String(),
 		CreatedAt: userData.CreatedAt.Time,
 		UpdatedAt: userData.CreatedAt.Time,
 		Email: userData.Email.String,
+		Token: token,
 	}
 
 	dat, err := json.Marshal(respBody)

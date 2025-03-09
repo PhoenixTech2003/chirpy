@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/phoenixTech2003/chirpy/internal/auth"
 	"github.com/phoenixTech2003/chirpy/internal/database"
 )
 
@@ -14,7 +15,6 @@ import (
 func (cfg *apiConfig) postChirps(w http.ResponseWriter, r *http.Request){
 	type parameters struct {
 		Body string `json:"body"`
-		User_id string `json:"user_id"`
 	}
 	type errorParameters struct {
 		Body string `json:"body"`
@@ -22,9 +22,24 @@ func (cfg *apiConfig) postChirps(w http.ResponseWriter, r *http.Request){
 		Error string `json:"error"`
 	}
 
+	tokenString, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Failed to extract token %s", err)
+		w.WriteHeader(401)
+		return
+	}
+
+
+	userId , err := auth.ValidateJWT(tokenString,cfg.tokenSecret)
+	if err != nil {
+		log.Printf("Failed to extract token %s", err)
+		w.WriteHeader(401)
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("An error occured while decoding the json: %s", err)
 		errorResp := errorParameters{
@@ -39,7 +54,7 @@ func (cfg *apiConfig) postChirps(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	createChirpParams := database.CreateChirpParams{
-		UserID: uuid.NullUUID{Valid: true, UUID: uuid.MustParse(params.User_id)},
+		UserID: uuid.NullUUID{UUID: userId, Valid: true},
 		Body: sql.NullString{String: params.Body, Valid: true},
 	}
 	chirp, err := cfg.dbQueries.CreateChirp(r.Context(),createChirpParams)
@@ -57,7 +72,7 @@ func (cfg *apiConfig) postChirps(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	postChirpResponse := parameters{
-		User_id: chirp.ID.URN(),
+	
 		Body: chirp.Body.String,
 	}
 

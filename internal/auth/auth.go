@@ -3,6 +3,8 @@ package auth
 import (
 	"errors"
 	"log"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -37,7 +39,7 @@ func MakeJWT(userId uuid.UUID, tokenSecret string, expiresIn time.Duration)(stri
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject: userId.String(),
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodES256,claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
 	signedJWT, err :=token.SignedString([]byte(tokenSecret))
 	if err != nil {
 		log.Printf("An error occured while signing your JWT: %s", err)
@@ -46,4 +48,32 @@ func MakeJWT(userId uuid.UUID, tokenSecret string, expiresIn time.Duration)(stri
 
 	return signedJWT , nil
 
+}
+
+func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error){
+	claims := jwt.RegisteredClaims{}
+	token, err := jwt.ParseWithClaims(tokenString,&claims,func(t *jwt.Token) (interface{}, error) {return []byte(tokenSecret), nil})
+	if err != nil {
+		log.Printf("An error occured while validating your jwt %s",err)
+		return uuid.UUID{}, err
+	}
+
+	id, err := token.Claims.GetSubject()
+	if err != nil {
+		log.Printf("An error occured while getting the user id %s", err)
+		return uuid.UUID{}, err
+	}
+
+	return uuid.MustParse(id) , nil
+
+}
+
+func GetBearerToken (headers http.Header) (string, error){
+	authorizationHeader := headers.Get("Authorization")
+	if authorizationHeader == ""{
+		log.Print("Authorization header not found")
+		return "", errors.New("failed to get authorization header")
+	}
+	tokenString := strings.Split(authorizationHeader, " ")[1]
+	return tokenString, nil
 }

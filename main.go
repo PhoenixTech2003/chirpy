@@ -16,6 +16,7 @@ import (
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries *database.Queries
+	tokenSecret string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -45,12 +46,14 @@ func (cfg *apiConfig) middlewareResetServerHits(w http.ResponseWriter, req *http
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	JWTsecret := os.Getenv("TOKEN_SECRET")
 	db, err := sql.Open("postgres", dbURL)
 	if err!=nil {
 		log.Printf("Failed to open database connection %s", err)
 	}
 	apiCfg := apiConfig{
 		dbQueries: database.New(db),
+		tokenSecret: JWTsecret,
 	}
 	
 	mux := http.NewServeMux()
@@ -65,6 +68,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCfg.postUsers)
 	mux.HandleFunc("POST /api/login", apiCfg.loginUser)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
+	mux.HandleFunc("POST /api/chirps", apiCfg.postChirps)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
 	mux.HandleFunc("POST /api/reset", apiCfg.middlewareResetServerHits)
 	server := http.Server{
