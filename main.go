@@ -63,6 +63,7 @@ func main() {
 
 	})
 	mux.HandleFunc("POST /api/users", apiCfg.postUsers)
+	mux.HandleFunc("POST /api/login", apiCfg.loginUser)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
 	mux.HandleFunc("POST /api/reset", apiCfg.middlewareResetServerHits)
