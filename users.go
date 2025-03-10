@@ -105,7 +105,7 @@ func (cfg *apiConfig) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.MakeJWT(userData.ID, cfg.tokenSecret, 3.6e+12)
+	token, err := auth.MakeJWT(userData.ID, cfg.tokenSecret)
 	if err != nil {
 		log.Printf("An error occured while generating jwt for user %s failed with error: %s", userData.ID.String(), err)
 		w.WriteHeader(500)
