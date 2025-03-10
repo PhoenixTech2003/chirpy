@@ -67,6 +67,8 @@ func main() {
 	})
 	mux.HandleFunc("POST /api/users", apiCfg.postUsers)
 	mux.HandleFunc("POST /api/login", apiCfg.loginUser)
+	mux.HandleFunc("POST /api/refresh", apiCfg.postRefreshToken)
+	mux.HandleFunc("POST /api/revoke", apiCfg.postRevokeToken)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
 	mux.HandleFunc("POST /api/chirps", apiCfg.postChirps)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
