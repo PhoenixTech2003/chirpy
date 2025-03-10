@@ -34,11 +34,11 @@ func CheckPassword (password string, hash string) error {
 
 }
 
-func MakeJWT(userId uuid.UUID, tokenSecret string, expiresIn time.Duration)(string, error){
+func MakeJWT(userId uuid.UUID, tokenSecret string)(string, error){
 	claims := jwt.RegisteredClaims{
 		Issuer: "chirpy",
 		IssuedAt: jwt.NewNumericDate(time.Now().UTC()) ,
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(3.6e+12))),
 		Subject: userId.String(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
