@@ -28,3 +28,8 @@ SELECT id,
     hashed_password
 FROM users
 WHERE email = $1;
+
+-- name: UpgradeToChirpyRed :exec
+UPDATE users
+set is_chirpy_red = TRUE
+WHERE id = $1;

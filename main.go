@@ -17,6 +17,7 @@ type apiConfig struct {
 	fileServerHits atomic.Int32
 	dbQueries *database.Queries
 	tokenSecret string
+	polkaApiKey string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -47,6 +48,7 @@ func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	JWTsecret := os.Getenv("TOKEN_SECRET")
+	polkaApiKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err!=nil {
 		log.Printf("Failed to open database connection %s", err)
@@ -54,6 +56,7 @@ func main() {
 	apiCfg := apiConfig{
 		dbQueries: database.New(db),
 		tokenSecret: JWTsecret,
+		polkaApiKey: polkaApiKey,
 	}
 	
 	mux := http.NewServeMux()
@@ -72,6 +75,7 @@ func main() {
 	mux.HandleFunc("POST /api/revoke", apiCfg.postRevokeToken)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
 	mux.HandleFunc("POST /api/chirps", apiCfg.postChirps)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.upgradeToChirpyRed)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
 	mux.HandleFunc("POST /api/reset", apiCfg.middlewareResetServerHits)
 	server := http.Server{

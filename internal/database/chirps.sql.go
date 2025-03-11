@@ -21,6 +21,7 @@ VALUES
     $2
 )
 
+
 RETURNING id, user_id, body
 `
 
@@ -34,4 +35,27 @@ func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp
 	var i Chirp
 	err := row.Scan(&i.ID, &i.UserID, &i.Body)
 	return i, err
+}
+
+const deleteUserChirp = `-- name: DeleteUserChirp :exec
+DELETE FROM chirps WHERE id = $1 AND user_id = $2
+`
+
+type DeleteUserChirpParams struct {
+	ID     uuid.UUID
+	UserID uuid.NullUUID
+}
+
+func (q *Queries) DeleteUserChirp(ctx context.Context, arg DeleteUserChirpParams) error {
+	_, err := q.db.ExecContext(ctx, deleteUserChirp, arg.ID, arg.UserID)
+	return err
+}
+
+const getAllChirps = `-- name: GetAllChirps :exec
+SELECT id, user_id, body FROM chirps
+`
+
+func (q *Queries) GetAllChirps(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, getAllChirps)
+	return err
 }

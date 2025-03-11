@@ -97,3 +97,37 @@ func (cfg *apiConfig) postChirps(w http.ResponseWriter, r *http.Request){
 
 	
 }
+
+func (cfg *apiConfig) DeleteChirp (w http.ResponseWriter, r *http.Request){
+	tokenString , err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Print("an error occured while getting bearer token")
+		w.WriteHeader(401)
+		return
+	}
+
+	userId , err := auth.ValidateJWT(tokenString, cfg.tokenSecret)
+	if err != nil {
+		log.Print("an error occured while getting bearer token")
+		w.WriteHeader(401)
+		return
+	}
+
+	chirpId := r.PathValue("chirpId")
+
+	deleteUserChirpParameters := database.DeleteUserChirpParams{
+		ID: uuid.MustParse(chirpId),
+		UserID: uuid.NullUUID{UUID: userId, Valid: true},
+	}
+
+	err = cfg.dbQueries.DeleteUserChirp(r.Context(),deleteUserChirpParameters)
+
+	if err != nil {
+		log.Printf("The record does not exist")
+		w.WriteHeader(404)
+		return
+	}
+
+	w.WriteHeader(204)
+	
+}
