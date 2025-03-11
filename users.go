@@ -146,3 +146,79 @@ func (cfg *apiConfig) loginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(dat)
 }
+
+
+func (cfg *apiConfig) updateEmailAndPassword(w http.ResponseWriter, r *http.Request ){
+	type parameters struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type responseParameters struct {
+		Id uuid.UUID `json:"id"`
+		Email string `json:"email"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+	}
+	tokenString, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("an error occured while wxtracting the access token %s", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	userId , err := auth.ValidateJWT(tokenString, cfg.tokenSecret)
+	if err != nil {
+		log.Printf("an error occured while wxtracting the access token %s", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	requestParams := parameters{}
+
+	err = decoder.Decode(&requestParams)
+	if err != nil {
+		log.Printf("Failed to decode json with error %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	hasedPassword,err := auth.HashPassword(requestParams.Password)
+	if err != nil {
+		log.Printf("an error occured while hashing your password, %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	updatePasswordAndEmailParams := database.UpdatePasswordAndEmailParams{
+		Email: sql.NullString{String: requestParams.Email, Valid: true},
+		HashedPassword: hasedPassword,
+		ID: userId,
+	}
+	userData, err := cfg.dbQueries.UpdatePasswordAndEmail(r.Context(), updatePasswordAndEmailParams)
+	if err != nil {
+		log.Printf("failed to update email and password")
+		w.WriteHeader(500)
+		return
+	}
+
+	responseBody := responseParameters{
+		Id: userData.ID,
+		Email: userData.Email.String,
+		CreatedAt: userData.CreatedAt.Time,
+		UpdatedAt: userData.UpdatedAt.Time,
+	}
+
+	dat , err := json.Marshal(responseBody)
+	if err != nil {
+		log.Printf("an error occured while marshalling the json %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	w.Header().Set("Content-Type","application/json")
+	w.WriteHeader(200)
+	w.Write(dat)
+
+}
