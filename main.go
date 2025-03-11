@@ -75,6 +75,7 @@ func main() {
 	mux.HandleFunc("POST /api/revoke", apiCfg.postRevokeToken)
 	mux.HandleFunc("POST /api/validate_chirp", validator)
 	mux.HandleFunc("POST /api/chirps", apiCfg.postChirps)
+	mux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.upgradeToChirpyRed)
 	mux.Handle("/admin/metrics", apiCfg.middlewareWritesMetrics(http.FileServer(http.Dir("./admin.html"))))
 	mux.HandleFunc("POST /api/reset", apiCfg.middlewareResetServerHits)
