@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
 	"github.com/google/uuid"
 	"github.com/phoenixTech2003/chirpy/internal/auth"
 	"github.com/phoenixTech2003/chirpy/internal/database"
@@ -151,6 +150,8 @@ func (cfg *apiConfig) GetAllChirps(w http.ResponseWriter, r *http.Request) {
 		w.Write(dat)
 		return
 	}
+
+	
 
 	
 	chirps, err := cfg.dbQueries.GetAllChirps(r.Context())
